@@ -1,70 +1,200 @@
-# Getting Started with Create React App
+# Redux
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+1. Một số lưu ý quan trọng trước khi bắt đầu tìm hiểu Redux
 
-## Available Scripts
+- HTML, CSS
+- ES 6+
+- React: Props, state, Function Component, React Hooks,...
+- Async trong JS
 
-In the project directory, you can run:
+2. Redux là gì?
 
-### `npm start`
+- Là một thư viện JS dùng để quản lý và cập nhật state của ứng dụng
+- Redux là một PATTERN (khuôn mẫu)
+- Redux Toolkit bản chất là một Redux
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+3. Vì sao nên sử dụng Redux(Redux Toolkit)?
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Quản lí Global state
+  - Các component tại mọi nơi trong ứng dụng có thể truy xuất và cập nhật
+  - Giải quyết vấn đề của React khi muốn truyền dữ liệu vào các cấp con cháu
+- Dễ dàng debug
+- Xử lý caching dữ liệu từ Server
+- Redux toolkit sinh ra để giải quyết các vấn đề đối với Redux Core:
+  - Việc cấu hình (config) Redux phức tạp
+  - Phải cài đặt thủ công nhiều packages để Redux có thể hoạt động hiệu quả
+  - Redux yêu cầu rất nhiều boilerplate code (code lặp đi lặp lại nhiều lần)
 
-### `npm test`
+4. Khi nào nên sử dụng Redux?
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Dự án có số lượng lớn state và các state được sử dụng ở nhiều nơi
+- State được cập nhật thường xuyên
+- Logic code cập nhật state phức tạp
+- Ứng dụng có số lượng code trung bình hoặc lớn và có nhiều người làm chung
+- Cần debug và muốn xem cách state được cập nhật tại bất kì khoảng thời gian nào
 
-### `npm run build`
+5. Kiến trúc và khái niệm liên quan:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- State Management: (useState, useReducers,...)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```jsx
+function Counter() {
+  // State: a counter value
+  const [counter, setCounter] = useState(0);
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+  // Action: code that causes an update to the state when some thing happens
+  const increment = () => {
+    setCounter((prevCounter) => prevCounter + 1);
 
-### `npm run eject`
+    // View: the UI definition
+    return (
+      <div>
+        value: {counter}
+        <button onClick={increment}>Increment</button>
+      </div>
+    );
+  };
+}
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- Immutability (Bất biến)
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```jsx
+/**
+ * Ví dụ về mutation (thay đổi giá trị obj, array)
+ * Khong nen dung trong REDUX
+ **/
+const obj = { a: 1, b: 2 };
+// still the same object outside, but the contents have changed
+obj.b = 3;
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+const arr = ["a", "b"];
+// In the same way, we can change the contents of this array
+arr.push("c");
+arr[1] = "d";
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```jsx
+/**
+ * Ví dụ về immutation (KHÔNG thay đổi giá trị obj, array)
+ * NEN DUNG TRONG REDUX
+ **/
+const obj = {
+  a: {
+    c: 3,
+  },
+  b: 2,
+};
 
-## Learn More
+const obj2 = {
+  // copy obj
+  ...obj,
+  // overwrite a
+  a: {
+    // copy obj.a
+    ...obj.a,
+    // overwrite c
+    c: 42,
+  },
+};
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+const arr = ["a", "b"];
+// Create a new copy arr, with "c" appended to the end
+const arr2 = arr.concat("c");
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+// or, we can make a copy of the original array:
+const arr3 = arr.slice();
+// and mutate the copy
+arr3.push("c");
+```
 
-### Code Splitting
+- Kiến trúc Redux
+  ![Ảnh ví dụ](https://redux.js.org/assets/images/ReduxDataFlowDiagram-49fa8c3968371d9ef6f2a1486bd40a26.gif)
+- 1. REDUCERS:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+  - Là 1 function (dùng để cập nhật lại giá trị state ở trong kho, kiểm tra action là gì rồi cập nhật state tương ứng)
+  - Giá trị state mới luôn được tính toán dự trên giá trị state trước đó
+  - Không được thay đổi giá trị state hiện tại
+  - Không được dùng code bất đồng bộ,không dự đoán được ở trong function reducer(Math.random(), Date.now(),Request tới Server...)
+  - PURE FUNCTION (Dự đoán được)
 
-### Analyzing the Bundle Size
+  ```jsx
+  const initValue = { value: 0 };
+  const rootReducer = (state = initValue, action) => {
+    // Action
+    /**
+    {
+        type: "todoList/increment",
+        payload: 10,
+    };
+    **/
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+    // Predictable (Dự đoán được)
+    switch (action.type) {
+      case "INCREMENT":
+        // Immutability
+        return {
+          ...state,
+          value: state.value + 1,
+        };
+      // => { value: 1; }
+      case "todoList/increment":
+        return {
+          ...state,
+          value: state.value + action.payload,
+        };
+      // => { value: 10; }
 
-### Making a Progressive Web App
+      default:
+        return state;
+    }
+  };
+  ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- 2. ACTION:
 
-### Advanced Configuration
+  - Là 1 Object
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+  ```jsx
+  const INCREMENT = {
+    type: "todoList/increment",
+    payload: 10,
+  };
 
-### Deployment
+  // Action creators
+  const incrementCreator = (data) => {
+    return {
+      type: "todoList/increment123",
+      payload: data,
+    };
+  };
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+  incrementCreator(10);
+  ```
 
-### `npm run build` fails to minify
+- 3. DISPATCH:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+  - Là 1 Function
+
+  ```jsx
+  dispatch(INCREMENT);
+  /** 
+  {
+      type: "todoList/increment",
+      payload: 10,
+  };
+  **/
+
+  dispatch(incrementCreator(15));
+  /** 
+  {
+      type: "todoList/increment123",
+      payload: 15,
+  };
+  **/
+  ```
+
+6. Project:
+
+- React + Redux Core
+- React + Redux Toolkit

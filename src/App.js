@@ -1,6 +1,6 @@
 import { Typography, Divider } from "antd";
 import "./App.css";
-import TodoList from "./components/TodolList";
+import TodoList from "./components/TodoList";
 import Filters from "./components/Filters";
 
 const { Title } = Typography;
